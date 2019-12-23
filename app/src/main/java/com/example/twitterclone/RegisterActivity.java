@@ -8,6 +8,7 @@ import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.view.View;
@@ -17,13 +18,17 @@ import android.widget.Toast;
 
 import net.gotev.uploadservice.MultipartUploadRequest;
 
+import org.json.JSONObject;
+
 import java.util.UUID;
 
 import de.hdodenhof.circleimageview.CircleImageView;
 
 public class RegisterActivity extends AppCompatActivity {
 
-    String username,handle,email,password;
+
+
+    EditText username,handle,email,password;
     Uri filePath;
     CircleImageView proImageView;
 
@@ -51,35 +56,57 @@ public class RegisterActivity extends AppCompatActivity {
             new MultipartUploadRequest(getApplicationContext(), uploadId,
                     "https://twitter-clone-test.herokuapp.com/signup")
                     .addFileToUpload(path, "image") //Adding file
-                    .addParameter("username", username)
-                    .addParameter("email",email)
-                    .addParameter("handle",handle)
-                    .addParameter("password",password)//Adding text parameter to the request
+                    .addParameter("username", username.getText().toString())
+                    .addParameter("email",email.getText().toString())
+                    .addParameter("handle",handle.getText().toString())
+                    .addParameter("password",password.getText().toString())//Adding text parameter to the request
                     .setMaxRetries(2)
                     .startUpload();
-            Toast.makeText(getApplicationContext(),"success upload", Toast.LENGTH_SHORT).show();
+            //Toast.makeText(getApplicationContext(),"success upload", Toast.LENGTH_SHORT).show();
         } catch (Exception exc) {
-            Toast.makeText(getApplicationContext(), exc.getMessage(), Toast.LENGTH_SHORT).show();
+            //Toast.makeText(getApplicationContext(), exc.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
 
     public void regUser(View view) {
-        username=((EditText)findViewById(R.id.regUsername)).getText().toString();
-        email=((EditText)findViewById(R.id.regEmail)).getText().toString();
-        handle=((EditText)findViewById(R.id.regHandle)).getText().toString();
-        password=((EditText)findViewById(R.id.regPass)).getText().toString();
-        System.out.println(username+email+handle+password);
-        if(username==null||email==null||password==null||handle==null) {
+        username=((EditText)findViewById(R.id.regUsername));
+        email=((EditText)findViewById(R.id.regEmail));
+        handle=((EditText)findViewById(R.id.regHandle));
+        password=((EditText)findViewById(R.id.regPass));
+        if(username.getText().toString().equals("")||email.getText().toString().equals("")
+                ||password.getText().toString().equals("")||handle.getText().toString().equals("")) {
             Toast.makeText(getApplicationContext(),"Fill all fields",Toast.LENGTH_SHORT).show();
         } else {
             if(filePath==null) {
                 Uri uri = Uri.parse("android.resource://com.example.twitterclone/drawable/default_profile_img.png");
-                sendRequest(uri);
+                new RegisterTask().execute(uri);
             } else {
-                sendRequest(filePath);
+                new RegisterTask().execute(filePath);
             }
         }
     }
+
+    public class RegisterTask extends AsyncTask<Uri,Void,String> {
+        @Override
+        protected String doInBackground(Uri... uris) {
+            Uri uri=uris[0];
+            sendRequest(uri);
+            return "Done";
+        }
+
+        @Override
+        protected void onPostExecute(String s) {
+            super.onPostExecute(s);
+            username.setText("");
+            email.setText("");
+            handle.setText("");
+            password.setText("");
+            proImageView.setImageBitmap(null);
+            Toast.makeText(getApplicationContext(),"Successfully Registered",Toast.LENGTH_SHORT).show();
+            finish();
+        }
+    }
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

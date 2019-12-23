@@ -37,13 +37,16 @@ import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.VolleyLog;
+import com.android.volley.toolbox.JsonArrayRequest;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
+import com.squareup.picasso.Picasso;
 
 import net.gotev.uploadservice.MultipartUploadRequest;
 import net.gotev.uploadservice.UploadNotificationConfig;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -67,15 +70,13 @@ import static android.app.Activity.RESULT_OK;
 
 public class FeedFragment extends Fragment {
 
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
+
     private static final String TAG = FeedAdapter.class.getSimpleName();
-    //private static final String ARG_PARAM2 = "param2";
+
     private User currUser;
-    // TODO: Rename and change types of parameters
-    //private String mParam1;
+
     ImageView imageView;
-   // private String mParam2;
+
     Uri filePath;
     private RecyclerView recyclerView;
     private List<Tweet> tweets;
@@ -153,20 +154,6 @@ public class FeedFragment extends Fragment {
         return path;
     }
 
-//    public static String ConvertBitmapToString(Bitmap bitmap){
-//        String encodedImage = "";
-//
-//        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-//        bitmap.compress(Bitmap.CompressFormat.JPEG, 5, byteArrayOutputStream);
-//        try {
-//            encodedImage= URLEncoder.encode(Base64.encodeToString(byteArrayOutputStream.toByteArray(), Base64.DEFAULT), "UTF-8");
-//        } catch (UnsupportedEncodingException e) {
-//            e.printStackTrace();
-//        }
-//
-//        return encodedImage;
-//    }
-
     public void addNewTweet(final Context context, final String s, final User currUser, final EditText editText) {
         RequestQueue requestQueue = Volley.newRequestQueue(context);
         String url = "https://twitter-clone-test.herokuapp.com/tweet?text="+s+"&user_id="+currUser.getId();
@@ -181,10 +168,6 @@ public class FeedFragment extends Fragment {
                             if(response.get("response").equals("success")) {
                                 Toast.makeText(context,"success",Toast.LENGTH_SHORT).show();
                                 editText.setText("");
-                                tweets.add(0,new Tweet(currUser.getUsername(),currUser.getHandle(),s,
-                                        new SimpleDateFormat("yyyyMMdd_HHmmss").format(Calendar.getInstance().getTime())));
-                                recyclerView.setAdapter(feedAdapter);
-                                feedAdapter.notifyDataSetChanged();
                             } else {
                                 Toast.makeText(context,"error",Toast.LENGTH_SHORT).show();
                             }
@@ -212,30 +195,21 @@ public class FeedFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+
         final View view=inflater.inflate(R.layout.fragment_feed,container,false);
         recyclerView=view.findViewById(R.id.feedRecyclerView);
+
         tweets=new ArrayList<>();
+
         requestStoragePermission();
-        tweets.add(new Tweet("dev","@devil","My first tweetMy first tweetMy first tweet","09/2/19 5:45 PM"));
-        tweets.add(new Tweet("dev","@devil","My first tweetMy first tweet","09/2/19 5:45 PM"));
-        tweets.add(new Tweet("dev","@devil","My first tweet","09/2/19 5:45 PM"));
-        tweets.add(new Tweet("dev","@devil","My first tweet","09/2/19 5:45 PM"));
-        tweets.add(new Tweet("dev","@devil","My firstMy first tweetMy first tweetMy first tweet tweet","09/2/19 5:45 PM"));
-        tweets.add(new Tweet("dev","@devil","My first tweet","09/2/19 5:45 PM"));
-        tweets.add(new Tweet("dev","@devil","MyMy first tweetMy first tweetMy first tweetMy first tweet first tweet","09/2/19 5:45 PM"));
-        tweets.add(new Tweet("dev","@devil","My first tweet","09/2/19 5:45 PM"));
-        tweets.add(new Tweet("dev","@devil","My first tweet","09/2/19 5:45 PM"));
-        tweets.add(new Tweet("dev","@devil","My My first tweetMy first tweetMy first tweetMy first tweetfirst tweet","09/2/19 5:45 PM"));
-        tweets.add(new Tweet("dev","@devil","My first tweet","09/2/19 5:45 PM"));
-        tweets.add(new Tweet("dev","@devil","My first tweet","09/2/19 5:45 PM"));
-        tweets.add(new Tweet("dev","@devil","My fMy first tweetMy first tweetMy first tweetMy first tweetirst tweet","09/2/19 5:45 PM"));
-        tweets.add(new Tweet("dev","@devil","My first tweet","09/2/19 5:45 PM"));
-        tweets.add(new Tweet("dev","@devil","My first tweet","09/2/19 5:45 PM"));
+
         RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(getActivity());
         recyclerView.setLayoutManager(layoutManager);
         feedAdapter=new FeedAdapter(getActivity(),tweets);
         recyclerView.setAdapter(feedAdapter);
+
         currUser=(User)getArguments().getSerializable("currUser");
+
         TextView textView=view.findViewById(R.id.textView);
         imageView=view.findViewById(R.id.tweetImageId);
         Button addImageBtn=view.findViewById(R.id.addImageBtn);
@@ -245,6 +219,7 @@ public class FeedFragment extends Fragment {
                 pickImage(getContext());
             }
         });
+
         Button newTweetBtn=view.findViewById(R.id.newTweetBtn);
         newTweetBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -253,16 +228,18 @@ public class FeedFragment extends Fragment {
                 String s=newTweetText.getText().toString();
                 if(s.length()>0) {
                     uploadMultipart(currUser.getId(),s);
+                    newTweetText.setText("");
+                    imageView.setImageBitmap(null);
+                    imageView.setVisibility(View.GONE);
+                    refreshFeed(getContext(),currUser);
                 } else {
-                    Toast.makeText(getContext(),"Empty Tweet Not Allowed!",Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), "Empty Tweet Not Allowed!", Toast.LENGTH_SHORT).show();
                 }
-
-
-
             }
         });
         String s=currUser.getUsername()+"'s feed";
         textView.setText(s);
+        refreshFeed(getContext(),currUser);
         return view;
 
 
@@ -275,6 +252,7 @@ public class FeedFragment extends Fragment {
 
         public class MyViewHolder extends RecyclerView.ViewHolder {
             public TextView username,handle,date,text;
+            public ImageView image;
 
             public MyViewHolder(View view) {
                 super(view);
@@ -282,6 +260,7 @@ public class FeedFragment extends Fragment {
                 handle = view.findViewById(R.id.tweethandle);
                 date = view.findViewById(R.id.tweetdate);
                 text=view.findViewById(R.id.tweettext);
+                image=view.findViewById(R.id.tweetImageFeed);
             }
         }
 
@@ -306,6 +285,7 @@ public class FeedFragment extends Fragment {
             holder.handle.setText(tweet.getHandle());
             holder.date.setText(tweet.getDate());
             holder.text.setText(tweet.getTweettext());
+            Picasso.get().load("https://twitter-clone-test.herokuapp.com/getImage?fname="+tweet.getFname()).into(holder.image);
         }
 
         @Override
@@ -313,7 +293,6 @@ public class FeedFragment extends Fragment {
             return tweets.size();
         }
     }
-
     private void requestStoragePermission() {
         if (ContextCompat.checkSelfPermission(getContext(), Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED)
             return;
@@ -326,9 +305,7 @@ public class FeedFragment extends Fragment {
         //And finally ask for the permission
         ActivityCompat.requestPermissions(getActivity(), new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, STORAGE_PERMISSION_CODE);
     }
-
-    private static final int STORAGE_PERMISSION_CODE = 123;
-    //This method will be called when the user will tap on allow or deny
+    private static final int STORAGE_PERMISSION_CODE = 123;//This method will be called when the user will tap on allow or deny
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
 
@@ -346,6 +323,34 @@ public class FeedFragment extends Fragment {
         }
     }
 
-
-
+    public void refreshFeed(Context context,final User currUser) {
+        RequestQueue requestQueue=Volley.newRequestQueue(context);
+        String url = "https://twitter-clone-test.herokuapp.com/getTweets";
+        JsonArrayRequest request=new JsonArrayRequest(Request.Method.GET, url, null,
+                new Response.Listener<JSONArray>() {
+                    @Override
+                    public void onResponse(JSONArray response) {
+                        tweets.clear();
+                        for(int i=0;i<response.length();i++) {
+                           try{
+                               tweets.add(new Tweet(response.getJSONObject(i).get("username").toString(),
+                                                    response.getJSONObject(i).get("handle").toString(),
+                                                    response.getJSONObject(i).get("text").toString(),
+                                                    response.getJSONObject(i).get("date_created").toString(),
+                                                    response.getJSONObject(i).get("fname").toString()));
+                           } catch (Exception e) {
+                               e.printStackTrace();
+                           }
+                        }
+                        recyclerView.setAdapter(feedAdapter);
+                        feedAdapter.notifyDataSetChanged();
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                error.printStackTrace();
+            }
+        });
+        requestQueue.add(request);
+    }
 }

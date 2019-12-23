@@ -54,6 +54,11 @@
         android:text="My tweet"
         android:textColor="#111" />
 
+    <ImageView
+        android:id="@+id/tweetImageFeed"
+        android:layout_width="match_parent"
+        android:layout_height="250dp" />
+
     <View
         android:layout_width="fill_parent"
         android:layout_height="0.3dp"
