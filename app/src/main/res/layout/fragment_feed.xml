@@ -88,13 +88,14 @@
             android:fontFamily="sans-serif-medium"
             android:paddingEnd="10dp"
             android:text="Your Feed"
+            android:layout_marginLeft="5dp"
             android:textColor="#111"
             android:textSize="25sp" />
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/feedRecyclerView"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="489dp"
             android:clipToPadding="false"
             android:scrollbars="vertical" />
     </LinearLayout>

@@ -22,7 +22,9 @@ import android.provider.MediaStore;
 import android.provider.SyncStateContract;
 import android.util.Base64;
 import android.util.Log;
+import android.view.GestureDetector;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -77,6 +79,7 @@ public class FeedFragment extends Fragment {
 
     ImageView imageView;
 
+    GestureDetector mDetector;
     Uri filePath;
     private RecyclerView recyclerView;
     private List<Tweet> tweets;
@@ -88,8 +91,6 @@ public class FeedFragment extends Fragment {
         // Required empty public constructor
     }
 
-
-    // TODO: Rename and change types and number of parameters
     public static FeedFragment newInstance(User currUser) {
         FeedFragment fragment = new FeedFragment();
         Bundle args = new Bundle();
@@ -198,9 +199,50 @@ public class FeedFragment extends Fragment {
 
         final View view=inflater.inflate(R.layout.fragment_feed,container,false);
         recyclerView=view.findViewById(R.id.feedRecyclerView);
+        mDetector=new GestureDetector(getContext(), new GestureDetector.OnGestureListener() {
+            @Override
+            public boolean onDown(MotionEvent e) {
+                return true;
+            }
 
+            @Override
+            public void onShowPress(MotionEvent e) {
+
+            }
+
+            @Override
+            public boolean onSingleTapUp(MotionEvent e) {
+                Toast.makeText(getContext(),"hrllo",Toast.LENGTH_LONG).show();
+                return true;
+            }
+
+            @Override
+            public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
+                return false;
+            }
+
+            @Override
+            public void onLongPress(MotionEvent e) {
+
+            }
+
+            @Override
+            public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+                if(e2.getY()-e1.getY()>150) {
+                    refreshFeed(getContext(),currUser);
+                    return true;
+                }
+                return false;
+            }
+        });
         tweets=new ArrayList<>();
-
+        view.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                mDetector.onTouchEvent(event);
+                return true;
+            }
+        });
         requestStoragePermission();
 
         RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(getActivity());
@@ -252,7 +294,7 @@ public class FeedFragment extends Fragment {
 
         public class MyViewHolder extends RecyclerView.ViewHolder {
             public TextView username,handle,date,text;
-            public ImageView image;
+            public ImageView image,proImage;
 
             public MyViewHolder(View view) {
                 super(view);
@@ -261,6 +303,7 @@ public class FeedFragment extends Fragment {
                 date = view.findViewById(R.id.tweetdate);
                 text=view.findViewById(R.id.tweettext);
                 image=view.findViewById(R.id.tweetImageFeed);
+                proImage=view.findViewById(R.id.tweetProImg);
             }
         }
 
@@ -282,10 +325,12 @@ public class FeedFragment extends Fragment {
         public void onBindViewHolder(MyViewHolder holder, final int position) {
             final Tweet tweet = tweets.get(position);
             holder.username.setText(tweet.getUsername());
-            holder.handle.setText(tweet.getHandle());
-            holder.date.setText(tweet.getDate());
+            holder.handle.setText("@"+tweet.getHandle());
+            holder.date.setText(tweet.getDate().substring(0,16));
             holder.text.setText(tweet.getTweettext());
             Picasso.get().load("https://twitter-clone-test.herokuapp.com/getImage?fname="+tweet.getFname()).into(holder.image);
+            Picasso.get().load("https://twitter-clone-test.herokuapp.com/getProImg?fname="+tweet.getUser_fname()).into(holder.proImage);
+
         }
 
         @Override
@@ -337,7 +382,8 @@ public class FeedFragment extends Fragment {
                                                     response.getJSONObject(i).get("handle").toString(),
                                                     response.getJSONObject(i).get("text").toString(),
                                                     response.getJSONObject(i).get("date_created").toString(),
-                                                    response.getJSONObject(i).get("fname").toString()));
+                                                    response.getJSONObject(i).get("fname").toString(),
+                                                    response.getJSONObject(i).get("user_fname").toString()));
                            } catch (Exception e) {
                                e.printStackTrace();
                            }

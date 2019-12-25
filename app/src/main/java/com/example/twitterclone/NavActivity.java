@@ -42,7 +42,7 @@ public class NavActivity extends AppCompatActivity {
                 case 0:
                     return loadFeedFragment();
                 case 1:
-                    return ProfileFragment.newInstance("hrllo","second");
+                    return ProfileFragment.newInstance((User)getIntent().getSerializableExtra("currUser"));
                 default:
                     return null;
             }

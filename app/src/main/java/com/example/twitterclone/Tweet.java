@@ -5,14 +5,20 @@ public class Tweet {
     private String handle;
     private String tweettext;
     private String date;
+    private String user_fname;
     private String fname;
 
-    public Tweet(String username, String handle, String tweettext, String date,String fname) {
+    public Tweet(String username, String handle, String tweettext, String date,String fname,String user_fname) {
         this.username = username;
         this.handle = handle;
         this.tweettext = tweettext;
         this.date = date;
         this.fname=fname;
+        this.user_fname=user_fname;
+    }
+
+    public String getUser_fname() {
+        return user_fname;
     }
 
     public String getUsername() {
